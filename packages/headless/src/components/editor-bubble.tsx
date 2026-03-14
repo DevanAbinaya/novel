@@ -1,27 +1,20 @@
-import { BubbleMenu, isNodeSelection, useCurrentEditor } from "@tiptap/react";
-import type { BubbleMenuProps } from "@tiptap/react";
-import { forwardRef, useEffect, useMemo, useRef } from "react";
+import { isNodeSelection, useCurrentEditor } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
+import type { BubbleMenuProps } from "@tiptap/react/menus";
+import { forwardRef, useMemo } from "react";
 import type { ReactNode } from "react";
-import type { Instance, Props } from "tippy.js";
 
 export interface EditorBubbleProps extends Omit<BubbleMenuProps, "editor"> {
   readonly children: ReactNode;
+  readonly tippyOptions?: BubbleMenuProps["options"];
 }
 
 export const EditorBubble = forwardRef<HTMLDivElement, EditorBubbleProps>(
   ({ children, tippyOptions, ...rest }, ref) => {
     const { editor: currentEditor } = useCurrentEditor();
-    const instanceRef = useRef<Instance<Props> | null>(null);
-
-    useEffect(() => {
-      if (!instanceRef.current || !tippyOptions?.placement) return;
-
-      instanceRef.current.setProps({ placement: tippyOptions.placement });
-      instanceRef.current.popperInstance?.update();
-    }, [tippyOptions?.placement]);
 
     const bubbleMenuProps: Omit<BubbleMenuProps, "children"> = useMemo(() => {
-      const shouldShow: BubbleMenuProps["shouldShow"] = ({ editor, state }) => {
+      const shouldShow: Required<BubbleMenuProps>["shouldShow"] = ({ editor, state }) => {
         const { selection } = state;
         const { empty } = selection;
 
@@ -38,22 +31,15 @@ export const EditorBubble = forwardRef<HTMLDivElement, EditorBubbleProps>(
 
       return {
         shouldShow,
-        tippyOptions: {
-          onCreate: (val) => {
-            instanceRef.current = val;
-
-            instanceRef.current.popper.firstChild?.addEventListener("blur", (event) => {
-              event.preventDefault();
-              event.stopImmediatePropagation();
-            });
-          },
+        // In Tiptap v3, tippyOptions is replaced by options
+        options: {
           moveTransition: "transform 0.15s ease-out",
           ...tippyOptions,
         },
-        editor: currentEditor,
+        editor: currentEditor || undefined,
         ...rest,
       };
-    }, [rest, tippyOptions]);
+    }, [rest, tippyOptions, currentEditor]);
 
     if (!currentEditor) return null;
 

@@ -1,10 +1,10 @@
 import { Extension } from "@tiptap/core";
 import type { Editor, Range } from "@tiptap/core";
 import { ReactRenderer } from "@tiptap/react";
-import Suggestion, { type SuggestionOptions } from "@tiptap/suggestion";
+import Suggestion, { type SuggestionOptions, type SuggestionProps } from "@tiptap/suggestion";
 import type { RefObject } from "react";
 import type { ReactNode } from "react";
-import tippy, { type GetReferenceClientRect, type Instance, type Props } from "tippy.js";
+import { computePosition, flip, shift, offset } from "@floating-ui/dom";
 import { EditorCommandOut } from "../components/editor-command";
 
 const Command = Extension.create({
@@ -31,10 +31,10 @@ const Command = Extension.create({
 
 const renderItems = (elementRef?: RefObject<Element> | null) => {
   let component: ReactRenderer | null = null;
-  let popup: Instance<Props>[] | null = null;
+  let popup: HTMLElement | null = null;
 
   return {
-    onStart: (props: { editor: Editor; clientRect: DOMRect }) => {
+    onStart: (props: SuggestionProps) => {
       component = new ReactRenderer(EditorCommandOut, {
         props,
         editor: props.editor,
@@ -49,29 +49,65 @@ const renderItems = (elementRef?: RefObject<Element> | null) => {
         return false;
       }
 
-      // @ts-ignore
-      popup = tippy("body", {
-        getReferenceClientRect: props.clientRect,
-        appendTo: () => (elementRef ? elementRef.current : document.body),
-        content: component.element,
-        showOnCreate: true,
-        interactive: true,
-        trigger: "manual",
-        placement: "bottom-start",
-      });
+      popup = document.createElement("div");
+      popup.style.zIndex = "999";
+      popup.style.position = "absolute";
+      popup.style.left = "0";
+      popup.style.top = "0";
+      popup.appendChild(component.element);
+      (elementRef ? elementRef.current : document.body)?.appendChild(popup);
+
+      const { clientRect } = props;
+      if (clientRect && popup) {
+        computePosition(
+          {
+            getBoundingClientRect:
+              typeof clientRect === "function" ? (clientRect as () => DOMRect) : () => clientRect as DOMRect,
+          },
+          popup,
+          {
+            placement: "bottom-start",
+            middleware: [offset(5), flip(), shift()],
+          },
+        ).then(({ x, y }) => {
+          if (popup) {
+            Object.assign(popup.style, {
+              left: `${x}px`,
+              top: `${y}px`,
+            });
+          }
+        });
+      }
     },
-    onUpdate: (props: { editor: Editor; clientRect: GetReferenceClientRect }) => {
+    onUpdate: (props: SuggestionProps) => {
       component?.updateProps(props);
 
-      popup?.[0]?.setProps({
-        getReferenceClientRect: props.clientRect,
-      });
+      const { clientRect } = props;
+      if (clientRect && popup) {
+        computePosition(
+          {
+            getBoundingClientRect:
+              typeof clientRect === "function" ? (clientRect as () => DOMRect) : () => clientRect as DOMRect,
+          },
+          popup,
+          {
+            placement: "bottom-start",
+            middleware: [offset(5), flip(), shift()],
+          },
+        ).then(({ x, y }) => {
+          if (popup) {
+            Object.assign(popup.style, {
+              left: `${x}px`,
+              top: `${y}px`,
+            });
+          }
+        });
+      }
     },
 
     onKeyDown: (props: { event: KeyboardEvent }) => {
       if (props.event.key === "Escape") {
-        popup?.[0]?.hide();
-
+        popup?.remove();
         return true;
       }
 
@@ -79,7 +115,7 @@ const renderItems = (elementRef?: RefObject<Element> | null) => {
       return component?.ref?.onKeyDown(props);
     },
     onExit: () => {
-      popup?.[0]?.destroy();
+      popup?.remove();
       component?.destroy();
     },
   };

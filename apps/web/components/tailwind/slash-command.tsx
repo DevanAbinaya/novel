@@ -10,11 +10,9 @@ import {
   MessageSquarePlus,
   Text,
   TextQuote,
-  Twitter,
   Youtube,
 } from "lucide-react";
 import { Command, createSuggestionItems, renderItems } from "novel";
-import { uploadFn } from "./image-upload";
 
 export const suggestionItems = createSuggestionItems([
   {
@@ -32,7 +30,12 @@ export const suggestionItems = createSuggestionItems([
     searchTerms: ["p", "paragraph"],
     icon: <Text size={18} />,
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).toggleNode("paragraph", "paragraph").run();
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleNode("paragraph", "paragraph")
+        .run();
     },
   },
   {
@@ -50,7 +53,12 @@ export const suggestionItems = createSuggestionItems([
     searchTerms: ["title", "big", "large"],
     icon: <Heading1 size={18} />,
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setNode("heading", { level: 1 }).run();
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode("heading", { level: 1 })
+        .run();
     },
   },
   {
@@ -59,7 +67,12 @@ export const suggestionItems = createSuggestionItems([
     searchTerms: ["subtitle", "medium"],
     icon: <Heading2 size={18} />,
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setNode("heading", { level: 2 }).run();
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode("heading", { level: 2 })
+        .run();
     },
   },
   {
@@ -68,7 +81,12 @@ export const suggestionItems = createSuggestionItems([
     searchTerms: ["subtitle", "small"],
     icon: <Heading3 size={18} />,
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setNode("heading", { level: 3 }).run();
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode("heading", { level: 3 })
+        .run();
     },
   },
   {
@@ -95,34 +113,39 @@ export const suggestionItems = createSuggestionItems([
     searchTerms: ["blockquote"],
     icon: <TextQuote size={18} />,
     command: ({ editor, range }) =>
-      editor.chain().focus().deleteRange(range).toggleNode("paragraph", "paragraph").toggleBlockquote().run(),
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleNode("paragraph", "paragraph")
+        .toggleBlockquote()
+        .run(),
   },
   {
     title: "Code",
     description: "Capture a code snippet.",
     searchTerms: ["codeblock"],
     icon: <Code size={18} />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
   },
   {
     title: "Image",
-    description: "Upload an image from your computer.",
-    searchTerms: ["photo", "picture", "media"],
+    description: "Insert an image from a URL.",
+    searchTerms: ["photo", "picture", "media", "url"],
     icon: <ImageIcon size={18} />,
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).run();
-      // upload image
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*";
-      input.onchange = async () => {
-        if (input.files?.length) {
-          const file = input.files[0];
-          const pos = editor.view.state.selection.from;
-          uploadFn(file, editor.view, pos);
-        }
-      };
-      input.click();
+      const imageUrl = prompt("Please enter the image URL");
+      if (imageUrl) {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .setImage({ src: imageUrl })
+          .run();
+      } else {
+        editor.chain().focus().deleteRange(range).run();
+      }
     },
   },
   {
@@ -132,7 +155,6 @@ export const suggestionItems = createSuggestionItems([
     icon: <Youtube size={18} />,
     command: ({ editor, range }) => {
       const videoLink = prompt("Please enter Youtube Video Link");
-      //From https://regexr.com/3dj5t
       const ytregex = new RegExp(
         /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/,
       );
@@ -149,31 +171,6 @@ export const suggestionItems = createSuggestionItems([
       } else {
         if (videoLink !== null) {
           alert("Please enter a correct Youtube Video Link");
-        }
-      }
-    },
-  },
-  {
-    title: "Twitter",
-    description: "Embed a Tweet.",
-    searchTerms: ["twitter", "embed"],
-    icon: <Twitter size={18} />,
-    command: ({ editor, range }) => {
-      const tweetLink = prompt("Please enter Twitter Link");
-      const tweetRegex = new RegExp(/^https?:\/\/(www\.)?x\.com\/([a-zA-Z0-9_]{1,15})(\/status\/(\d+))?(\/\S*)?$/);
-
-      if (tweetRegex.test(tweetLink)) {
-        editor
-          .chain()
-          .focus()
-          .deleteRange(range)
-          .setTweet({
-            src: tweetLink,
-          })
-          .run();
-      } else {
-        if (tweetLink !== null) {
-          alert("Please enter a correct Twitter Link");
         }
       }
     },

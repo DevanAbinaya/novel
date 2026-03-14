@@ -32,7 +32,7 @@ export const getPrevText = (editor: EditorInstance, position: number) => {
   const fragment = Fragment.fromArray(nodes);
   const doc = editor.state.doc.copy(fragment);
 
-  return editor.storage.markdown.serializer.serialize(doc) as string;
+  return (editor.storage as any).markdown.serializer.serialize(doc) as string;
 };
 
 // Get all content from the editor in markdown format
@@ -40,5 +40,5 @@ export const getAllContent = (editor: EditorInstance) => {
   const fragment = editor.state.doc.content;
   const doc = editor.state.doc.copy(fragment);
 
-  return editor.storage.markdown.serializer.serialize(doc) as string;
+  return (editor.storage as any).markdown.serializer.serialize(doc) as string;
 };
